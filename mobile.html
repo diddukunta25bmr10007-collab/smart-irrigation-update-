@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#001b13"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icon-192.png">
+<title>IRRY</title>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#001b13;--pn:#04261c;--ln:#0b4b38;--g:#13d99b;--tx:#f3fff9;--mu:#8faea3;--rd:#d12a36;--am:#d9a43a}
+html,body{margin:0;background:#000;color:var(--tx);font:16px/1.35 system-ui,Arial,sans-serif}
+.app{max-width:480px;margin:auto;min-height:100vh;background:var(--bg);padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+header{display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;border-bottom:1px solid var(--ln)}
+header b{font-size:20px}header small{display:block;color:var(--mu);font-size:12px}
+.pill{border:1px solid var(--g);color:var(--g);border-radius:20px;padding:5px 11px;font-size:13px}.pill.off{border-color:var(--am);color:var(--am)}.pill.bad{border-color:var(--rd);color:#ff8d95}
+section{display:none;padding:12px}section.on{display:block}
+h2{font-size:13px;color:#cfe6de;margin:18px 2px 8px;text-transform:uppercase;letter-spacing:.5px}h2 span{color:var(--mu);text-transform:none;letter-spacing:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}#hb{display:grid;gap:8px}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:10px 12px}
+.card small{display:block;color:var(--mu);font-size:12px}.grid .card small{text-transform:uppercase}.card b{font-size:18px}
+.bed{cursor:pointer}.bed.sel{border-color:var(--g);box-shadow:0 0 0 1px var(--g) inset}.bed.on{background:#073a2c}
+.mb{height:6px;background:#073c2d;border-radius:4px;margin:7px 0;overflow:hidden}.mb i{display:block;height:100%;background:#2a8fd0}.mb i.low{background:var(--rd)}
+button{font:inherit;border:0;border-radius:10px;padding:13px;background:#087d5c;color:#fff;font-weight:600}button:disabled{opacity:.4}
+.go{background:#10c992;color:#00170f}.stp{background:var(--am);color:#1a1200}.es{width:100%;margin-top:8px;background:var(--rd)}.es.rs{background:#1264d6}.rm{background:#173a30}
+input,select{font:inherit;width:100%;padding:11px;background:#021711;border:1px solid var(--ln);border-radius:10px;color:var(--tx)}
+.row{display:flex;gap:8px;margin-top:8px}.row>*{flex:1}.bl{display:flex;align-items:center;gap:10px;margin-bottom:8px}.bl>div{flex:1}.bl label{width:70px;font-size:12px;color:var(--mu)}.bl button{padding:9px 12px}
+.bl input[type=checkbox]{width:24px;height:24px}
+.days{display:flex;gap:4px;margin:8px 0}.days label{flex:1;text-align:center;font-size:12px;color:var(--mu)}.days input{width:100%;height:22px;padding:0}
+.help{font-size:13px;color:var(--mu);margin-top:8px}.ev{font-size:13px;color:#b9d3ca;padding:4px 0;border-bottom:1px solid #08382a}.ev span{color:var(--mu)}
+.fc{display:grid;grid-template-columns:70px 1fr auto auto;gap:8px;align-items:center;margin-bottom:6px;font-size:14px}
+nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:auto;display:flex;background:#00130d;border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border-radius:0;color:var(--mu);font-size:13px;padding:14px 4px}nav button.on{color:var(--g)}
+#toast{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));max-width:456px;margin:auto;background:#10372b;border:1px solid var(--g);border-radius:10px;padding:10px 12px;display:none;z-index:9}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.chips label{background:#021711;border:1px solid var(--ln);border-radius:10px;padding:8px 10px;display:flex;gap:6px;align-items:center}.chips input{width:18px;height:18px;padding:0}
+</style></head><body>
+<div class="app">
+<header><div><b>IRRY</b><small id="ver">Irrigation, simplified.</small></div><div class="pill off" id="pill">Connecting...</div></header>
+
+<section id="home" class="on">
+ <div class="grid">
+  <div class="card"><small>Status</small><b id="st">--</b></div><div class="card"><small>Active bed</small><b id="ab">None</b></div>
+  <div class="card"><small>Time left</small><b id="tm">0:00</b></div><div class="card"><small>Pump</small><b id="pm">OFF</b></div>
+  <div class="card"><small>Driest bed</small><b id="sm">--</b></div><div class="card"><small>Battery</small><b id="bt">--</b></div>
+  <div class="card"><small>Temperature</small><b id="tp">--</b></div><div class="card"><small>Rain today</small><b id="rc">--</b></div>
+ </div>
+ <h2>Beds <span>tap to select one or more</span></h2><div id="hb"></div>
+ <div class="row"><button class="rm" onclick="selAll()">Select all</button><button class="rm" onclick="sel.clear();draw()">Clear</button></div>
+ <div class="row"><input id="dur" type="number" min="1" max="120" placeholder="Minutes per bed (blank = each bed's default)"></div>
+ <div class="row"><button class="go" onclick="startSel()">START</button><button class="stp" onclick="cmd('stop')">STOP</button></div>
+ <div class="help" id="runinfo"></div>
+ <button class="es" id="es" onclick="estop()">EMERGENCY STOP</button>
+ <h2>Command</h2>
+ <div class="row"><input id="cmd" placeholder="Say or type: start bed 2"><button id="mic" style="flex:0 0 54px">🎙</button></div>
+ <button style="width:100%;margin-top:8px" onclick="sendText()">SEND COMMAND</button>
+ <div class="help" id="msg"></div>
+</section>
+
+<section id="beds">
+ <h2>Your beds <span>minutes per run</span></h2><div id="blist"></div>
+ <h2>Add a bed</h2>
+ <div class="card"><input id="bname" placeholder="Bed name, e.g. Tomatoes" maxlength="24">
+  <div class="row"><input id="bmin" type="number" min="1" max="120" value="5" aria-label="Minutes per run"><button id="addbtn" onclick="addBed()">ADD BED</button></div>
+  <div class="help" id="bhint"></div></div>
+</section>
+
+<section id="timers">
+ <h2>Set a timer</h2>
+ <div class="card"><small>Beds (they run one after another)</small><div class="chips" id="tbs"></div>
+  <div class="row"><input id="ttime" type="time" value="06:00"><input id="tmin" type="number" min="1" max="120" placeholder="Minutes"></div>
+  <div class="days" id="days"></div>
+  <button style="width:100%" onclick="addTimer()">SAVE TIMER</button>
+  <div class="help">Leave all days unticked for every day. Blank minutes uses the bed's default.</div></div>
+ <div class="card" style="margin-top:8px"><small>Or start once, after a countdown</small>
+  <div class="row"><input id="cd" type="number" min="1" max="1440" placeholder="Minutes from now"><button onclick="countdown()">START IN...</button></div></div>
+ <h2>Timers</h2><div id="tlist"></div>
+ <h2>Activity</h2><div id="evl"></div>
+</section>
+
+<section id="weather">
+ <h2>Weather <span id="loc"></span></h2><div id="wx"><div class="card">Loading...</div></div>
+ <h2>Location</h2>
+ <div class="card"><div class="row" style="margin-top:0"><input id="q" placeholder="Search a town or city"><button onclick="findLoc()" style="flex:0 0 80px">FIND</button></div><div id="geo"></div></div>
+ <h2>Rain rule</h2>
+ <div class="card"><small>Skip timers when today's rain chance is at least (%)</small><input id="rs" type="number" min="0" max="100" onchange="setRain(this.value)"></div>
+</section>
+</div>
+
+<div id="toast"></div>
+<nav><button data-t="home" class="on" onclick="tab('home')">Home</button><button data-t="beds" onclick="tab('beds')">Beds</button><button data-t="timers" onclick="tab('timers')">Timers</button><button data-t="weather" onclick="tab('weather')">Weather</button></nav>
+
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],fmt=s=>Math.floor((s||0)/60)+':'+String((s||0)%60).padStart(2,'0');
+const WC=n=>n==0?'Clear':n<4?'Cloudy':n<50?'Fog':n<60?'Drizzle':n<70?'Rain':n<80?'Snow':n<83?'Showers':n<90?'Snow showers':'Thunderstorm';
+let S=null,W=null,GEO=[],sel=new Set(),first=1,wAt=0,toastT;
+$('days').innerHTML=DAYS.map((d,i)=>`<label>${d}<input class="dy" type="checkbox" value="${i}"></label>`).join('');
+
+async function api(p,m='GET',b){const c=new AbortController(),t=setTimeout(()=>c.abort(),5000);
+ try{const r=await fetch(p,{method:m,cache:'no-store',signal:c.signal,headers:b?{'Content-Type':'application/json'}:{},body:b?JSON.stringify(b):undefined});return await r.json()}
+ catch(e){return{ok:false,error:'Server not reachable'}}finally{clearTimeout(t)}}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',3500)}
+// update a container only when its HTML changed and the user is not typing in it
+function put(id,h){const e=$(id),a=document.activeElement;
+ if(e._h===h||(e.contains(a)&&/^(INPUT|SELECT)$/.test(a.tagName)&&a.type!=='checkbox'))return;e._h=h;e.innerHTML=h}
+
+async function cmd(command,bed,minutes,raw){const r=await api('/api/command','POST',{command,bed,minutes,raw:raw||command+(bed?' bed '+bed:'')});toast(r.ok?'Sent: '+(raw||command):r.error)}
+function tog(n){sel.has(n)?sel.delete(n):sel.add(n);draw()}
+function selAll(){S.beds.forEach(b=>sel.add(b.bed));draw()}
+async function startSel(){if(!sel.size)return toast('Select at least one bed');const r=await api('/api/run','POST',{beds:[...sel].sort(),minutes:+$('dur').value||null});toast(r.ok?'Started '+sel.size+' bed(s)':r.error)}
+const estop=()=>cmd(S&&S.estop?'reset':'estop');
+async function sendText(){const t=$('cmd').value.trim();if(!t)return;const r=await api('/api/command-text','POST',{text:t});toast(r.ok?'Sent: '+t:r.error);if(r.ok)$('cmd').value=''}
+
+async function addBed(){const r=await api('/api/beds','POST',{name:$('bname').value,minutes:+$('bmin').value});toast(r.ok?'Bed added':r.error);if(r.ok)$('bname').value=''}
+async function editBed(n,v){const r=await api('/api/beds/'+n,'PATCH',{minutes:+v});toast(r.ok?'Saved':r.error)}
+async function delBed(n){if(!confirm('Remove this bed and its timers?'))return;const r=await api('/api/beds/'+n,'DELETE');toast(r.ok?'Bed removed':r.error)}
+const tBeds=()=>[...document.querySelectorAll('.tbx:checked')].map(x=>+x.value);
+async function addTimer(){const beds=tBeds();if(!beds.length)return toast('Select at least one bed');const days=[...document.querySelectorAll('.dy:checked')].map(x=>+x.value);
+ const r=await api('/api/timers','POST',{beds,time:$('ttime').value,minutes:+$('tmin').value||null,days});toast(r.ok?'Timer saved':r.error)}
+async function countdown(){const beds=tBeds();if(!beds.length)return toast('Select at least one bed');const r=await api('/api/timers','POST',{beds,delay:+$('cd').value,minutes:+$('tmin').value||null});toast(r.ok?'Countdown started':r.error)}
+const tOn=(i,on)=>api('/api/timers/'+i,'PATCH',{on});
+const tDel=async i=>{await api('/api/timers/'+i,'DELETE');toast('Timer removed')};
+
+function draw(){const bd=S.beds;if(first){first=0;sel=new Set(bd.slice(0,1).map(b=>b.bed))}[...sel].forEach(n=>{if(!bd.some(b=>b.bed==n))sel.delete(n)});
+ const p=$('pill');$('ver').textContent='Irrigation, simplified. · '+(S.version||'OLD server');p.textContent=S.online?'Laptop online':'Laptop offline';p.className='pill'+(S.online?'':' off');
+ const a=bd.find(b=>b.bed==S.currentBed),ms=bd.map(b=>b.moisture).filter(v=>v!=null);
+ $('st').textContent=!S.online?'Offline':S.estop?'E-STOP':S.pump?'Running':'Idle';
+ $('ab').textContent=a?a.name:'None';$('tm').textContent=a?fmt(a.timeLeft):'0:00';$('pm').textContent=S.pump?'ON':'OFF';
+ $('bt').textContent=S.battery?Math.round(S.battery)+'%':'--';$('sm').textContent=ms.length?Math.round(Math.min(...ms))+'%':'--';
+ $('es').textContent=S.estop?'RESET E-STOP':'EMERGENCY STOP';$('es').className=S.estop?'es rs':'es';$('msg').textContent=S.message||'';$('runinfo').textContent=(S.runq&&S.runq.length)?'Next up: '+S.runq.map(n=>(bd.find(b=>b.bed==n)||{}).name).join(', '):'Selected beds run one after another.';
+ put('hb',bd.map(b=>{const m=b.moisture;return `<div class="card bed ${sel.has(b.bed)?'sel':''} ${b.valve?'on':''}" onclick="tog(${b.bed})"><b>${esc(b.name)}</b>
+  <small>${b.valve?'Irrigating, '+fmt(b.timeLeft)+' left':(S.runq||[]).includes(b.bed)?'Queued':'Waiting'} · default ${b.minutes} min</small>
+  <div class="mb"><i class="${m<30?'low':''}" style="width:${Math.min(100,m||0)}%"></i></div><small>${m==null?'--':m+'% moisture'}${m<30?' (low)':''}</small></div>`}).join('')||'<div class="card">No beds yet. Add one in the Beds tab.</div>');
+ put('blist',bd.map(b=>`<div class="card bl"><div><b>${esc(b.name)}</b><small>Valve channel ${b.bed}</small></div><label>min<input type="number" min="1" max="120" value="${b.minutes}" onchange="editBed(${b.bed},this.value)"></label><button class="rm" onclick="delBed(${b.bed})">Remove</button></div>`).join('')||'<div class="card">No beds yet.</div>');
+ $('addbtn').disabled=!S.free.length;$('bhint').textContent=S.free.length?'Free valve channels: '+S.free.join(', '):'All valve channels are in use. Remove a bed to add another.';
+ put('tbs',bd.map(b=>`<label><input type="checkbox" class="tbx" value="${b.bed}">${esc(b.name)}</label>`).join(''));
+ put('tlist',S.timers.map(t=>{const n=(t.beds||[t.bed]).map(i=>{const b=bd.find(x=>x.bed==i);return b?esc(b.name):'Bed '+i}).join(', ');
+  const when=t.at?'In '+Math.max(0,Math.ceil((t.at-S.now)/60))+' min (one time)':t.time+' · '+(t.days.length?t.days.map(d=>DAYS[d]).join(' '):'Every day');
+  return `<div class="card bl"><div><b>${n}</b> · ${t.minutes?t.minutes+' min each':'default minutes'}<small>${when}</small></div><input type="checkbox" ${t.on?'checked':''} onchange="tOn(${t.id},this.checked)"><button class="rm" onclick="tDel(${t.id})">✕</button></div>`}).join('')||'<div class="card">No timers yet.</div>');
+ put('evl',S.events.map(e=>`<div class="ev"><span>${e.t}</span> ${esc(e.m)}</div>`).join('')||'<div class="ev">Nothing yet</div>');
+}
+
+async function loadW(force){W=await api('/api/weather'+(force?'?force=1':''));wAt=Date.now();drawW()}
+function drawW(){const d=W&&W.data;
+ if(!d)return put('wx',`<div class="card">Weather unavailable${W&&W.error?': '+esc(W.error):''}. The laptop needs internet access.</div>`);
+ const c=d.current,y=d.daily;$('loc').textContent=W.loc.name;$('tp').textContent=Math.round(c.temperature_2m)+'°C';
+ $('rc').textContent=(y.precipitation_probability_max[0]??'--')+'%';
+ put('wx',`<div class="grid"><div class="card"><small>Temperature</small><b>${c.temperature_2m}°C</b></div><div class="card"><small>Humidity</small><b>${c.relative_humidity_2m}%</b></div>
+  <div class="card"><small>Wind</small><b>${c.wind_speed_10m} km/h</b></div><div class="card"><small>Sky</small><b>${WC(c.weather_code)}</b></div></div><h2>5-day forecast</h2>`+
+  y.time.map((t,i)=>`<div class="card fc"><b>${new Date(t+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric'})}</b><span>${WC(y.weather_code[i])}</span><span>${Math.round(y.temperature_2m_max[i])}°/${Math.round(y.temperature_2m_min[i])}°</span><span>${y.precipitation_probability_max[i]??'--'}% rain</span></div>`).join('')+
+  `<div class="help">${W.error?'Offline, showing data from '+Math.round(W.age/60)+' min ago. ':''}Source: Open-Meteo. Evapotranspiration today: ${y.et0_fao_evapotranspiration[0]??'--'} mm (water lost from soil and plants).</div>`)}
+async function findLoc(){const r=await api('/api/geocode?q='+encodeURIComponent($('q').value));GEO=r.results||[];
+ put('geo',GEO.map((g,i)=>`<button class="rm" style="width:100%;margin-top:8px;text-align:left" onclick="setLoc(${i})">${esc(g.name)}</button>`).join('')||`<div class="help">${esc(r.error||'No places found')}</div>`)}
+async function setLoc(i){const r=await api('/api/location','POST',GEO[i]);if(r.ok){GEO=[];put('geo','');toast('Location saved');loadW(true)}else toast(r.error)}
+async function setRain(v){const r=await api('/api/settings','POST',{rain_skip:+v});toast(r.ok?'Saved':r.error)}
+
+$('mic').onclick=()=>{const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R)return toast('Voice input is not available in this browser');
+ try{const r=new R();r.lang='en-IN';r.onresult=e=>{$('cmd').value=e.results[0][0].transcript;sendText()};r.onerror=e=>toast('Voice error: '+e.error);r.start()}catch(e){toast('Voice input could not start')}};
+function tab(n){document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===n));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===n));if(n==='weather'&&Date.now()-wAt>3e5)loadW()}
+async function poll(){const s=await api('/api/state');
+ if(s.beds){S=s;if(!$('rs')._set){$('rs').value=s.rain_skip;$('rs')._set=1}draw()}else{const p=$('pill');p.textContent='Server unreachable';p.className='pill bad'}
+ setTimeout(poll,1000)}
+poll();loadW();setInterval(()=>loadW(),6e5);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script></body></html>

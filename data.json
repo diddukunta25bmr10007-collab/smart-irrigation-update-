@@ -1,0 +1,27 @@
+{
+ "beds": [
+  {
+   "bed": 1,
+   "name": "Bed 1",
+   "minutes": 1
+  },
+  {
+   "bed": 2,
+   "name": "Bed 2",
+   "minutes": 2
+  },
+  {
+   "bed": 3,
+   "name": "Bed 3",
+   "minutes": 1
+  }
+ ],
+ "timers": [],
+ "next_timer": 1,
+ "rain_skip": 60,
+ "loc": {
+  "name": "Ashta, Madhya Pradesh",
+  "lat": 23.02,
+  "lon": 76.72
+ }
+}

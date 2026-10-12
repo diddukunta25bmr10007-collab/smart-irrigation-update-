@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Irrigation 2D Simulation</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif}
+h1{font-size:20px;margin:14px 16px 0;letter-spacing:.3px}
+.w{overflow-x:auto;padding:0 8px 16px}svg{display:block;width:100%;min-width:900px;max-width:1400px;margin:0 auto;height:auto}
+text{font-family:Arial,Helvetica,sans-serif}
+@media (prefers-reduced-motion:reduce){.flow{animation:none!important}}
+.flow{animation:fl .6s linear infinite}@keyframes fl{to{stroke-dashoffset:-16}}
+</style></head><body>
+<h1>SMART IRRIGATION – AUTOMATIC OPERATION</h1>
+<div class="w"><svg id="s" viewBox="0 0 1300 900" role="img" aria-label="Irrigation simulation"></svg></div>
+<script>
+const NS='http://www.w3.org/2000/svg',svg=document.getElementById('s');
+const BX=170,BW=530,BH=100,YS=[70,245,420],PLAN=[2,2,1],COL={S:'#2e8b57',V:'#c0392b',M:'#e0a030'};
+let h='';
+function plant(cx,cy,n){
+ let g=`<g class="plant" transform="translate(${cx} ${cy}) scale(.78) translate(${-cx} ${-cy})">`;
+ for(let k=0;k<6;k++){const a=k*60+(n%3)*10;g+=`<ellipse cx="${(cx+Math.cos(a*Math.PI/180)*5).toFixed(1)}" cy="${(cy+Math.sin(a*Math.PI/180)*5).toFixed(1)}" rx="7" ry="3.5" transform="rotate(${a} ${(cx+Math.cos(a*Math.PI/180)*5).toFixed(1)} ${(cy+Math.sin(a*Math.PI/180)*5).toFixed(1)})" style="fill:var(--lf,#3f9b4a)" stroke="#2a6e33" stroke-width=".6"/>`}
+ g+=`<circle cx="${cx}" cy="${cy}" r="2.6" fill="#6d4c2f"/>`;
+ [[-7,5,25],[6,7,-20],[1,-8,5]].forEach(c=>{g+=`<ellipse cx="${cx+c[0]}" cy="${cy+c[1]}" rx="1.8" ry="5" transform="rotate(${c[2]} ${cx+c[0]} ${cy+c[1]})" fill="#8bc34a" stroke="#4f8a1f" stroke-width=".6"/>`});
+ return g+`</g>`}
+const T=(x,y,t,sz,o)=>`<text x="${x}" y="${y}" font-size="${sz||11}" ${o||''}>${t}</text>`;
+// manifold + pump
+h+=`<rect x="40" y="50" width="14" height="530" rx="3" fill="#1565c0"/><rect id="mf" class="" x="45" y="50" width="4" height="530" fill="none"/>`;
+h+=`<g transform="translate(47,330) rotate(-90)">${T(0,0,'MAIN MANIFOLD',11,'font-weight="bold" text-anchor="middle" transform="translate(0,-14)"')}</g>`;
+h+=`<rect x="14" y="590" width="66" height="26" rx="4" id="pump" fill="#9aa0a6" stroke="#555"/>${T(47,607,'PUMP',11,'text-anchor="middle" font-weight="bold" fill="#fff"')}<rect x="43" y="580" width="8" height="10" fill="#1565c0"/>`;
+let lab='';
+YS.forEach((y,i)=>{
+ const cy=y+50,k=i+1;
+ h+=`<rect x="54" y="${cy-4}" width="${BX-54}" height="8" fill="#1565c0"/>`;
+ h+=`<line id="bf${i}" x1="54" x2="${BX}" y1="${cy}" y2="${cy}" stroke="#9fd0ff" stroke-width="4" stroke-dasharray="8 8" class="" opacity="0"/>`;
+ h+=T(58,cy+20,'BRANCH',8,'fill="#555"');
+ h+=`<rect x="108" y="${cy-30}" width="26" height="9" rx="2" fill="#8e1b1b"/>${T(121,cy-22.5,'SOL',7,'text-anchor="middle" fill="#fff" font-weight="bold"')}`;
+ h+=`<rect id="v${i}" x="104" y="${cy-20}" width="34" height="34" rx="6" fill="#8a8f95" stroke="#333" stroke-width="1.5"/>${T(121,cy+3,'V'+k,12,'text-anchor="middle" fill="#fff" font-weight="bold"')}`;
+ h+=`<rect id="bed${i}" x="${BX}" y="${y}" width="${BW}" height="${BH}" rx="8" fill="#fdf3d6" stroke="#9b7a3c" stroke-width="2"/>`;
+ h+=`<rect id="wt${i}" x="${BX+2}" y="${y+2}" width="0" height="${BH-4}" rx="6" fill="#6db3f2" opacity=".65"/>`;
+ h+=`<g id="pg${i}">`;
+ [29,77].forEach((ry,r)=>{for(let p=0;p<5;p++)h+=plant(BX+36+p*92,y+ry,i*10+r*5+p)});
+ h+=`</g>`;
+ h+=T(BX+452,y+18,'MOISTURE',10,'fill="#7a5a1a" font-weight="bold" text-anchor="middle"');
+ h+=`<circle id="md${i}" cx="${BX+452}" cy="${y+52}" r="13" fill="#d32f2f" stroke="#7a1010" stroke-width="1.5"/>`;
+ h+=T(BX+452,y+57,'',10,`id="mp${i}" text-anchor="middle" fill="#fff" font-weight="bold"`);
+ const sx=BX+BW-48;
+ h+=T(sx+13,y-26,'WATER SENSOR',8,'text-anchor="middle" font-weight="bold"');
+ h+=`<rect id="sn${i}" x="${sx}" y="${y-22}" width="26" height="30" rx="3" fill="#8a8f95" stroke="#333"/>`;
+ h+=T(sx+13,y-4,'',8,`id="sv${i}" text-anchor="middle" fill="#fff" font-weight="bold"`);
+ h+=`<line x1="${sx+8}" x2="${sx+8}" y1="${y+8}" y2="${y+34}" stroke="#b0392b" stroke-width="2"/><line x1="${sx+18}" x2="${sx+18}" y1="${y+8}" y2="${y+34}" stroke="#b0392b" stroke-width="2"/>`;
+ h+=`<circle id="pa${i}" cx="${sx+8}" cy="${y+36}" r="3" fill="#2a6fdb"/><circle id="pb${i}" cx="${sx+18}" cy="${y+36}" r="3" fill="#2a6fdb"/>`;
+ h+=T(sx+13,y+60,'W'+k,11,'text-anchor="middle" font-weight="bold"');
+ h+=T(BX+40,y+BH+28,'BED '+k,15,'font-weight="bold"')+T(BX+40,y+BH+45,'',11,`id="ss${i}"`)+T(BX+40,y+BH+60,'',11,`id="sm${i}"`)+T(BX+40,y+BH+75,'',11,`id="sp${i}"`);
+ // wires to control box (upper wires drop furthest right, so no crossings)
+ ['S','V','M'].forEach((c,j)=>{
+  const n=i*3+j,xv=895-n*20,yh=y+6+j*14+ (j?8:0)*0,ys=y+8+j*14;
+  const mx=BX+452+10,my=y+44,pts=c==='M'?`${mx},${my} ${xv},${my} ${xv},600`:`${sx+(j===0?13:18)},${ys} ${xv},${ys} ${xv},600`;
+  h+=`<polyline id="w${i}${c}" points="${pts}" fill="none" stroke="${COL[c]}" stroke-width="2"/>`;
+  lab+=T(xv,613,c+k,7,`text-anchor="middle" fill="${COL[c]}" font-weight="bold"`);
+ });
+});
+// control box (front): terminal strip, title, component row, status/E-STOP row, relay text, glands
+h+=`<rect x="700" y="596" width="240" height="160" rx="10" fill="#e9ebee" stroke="#333" stroke-width="2.5"/>`;
+h+=`<rect x="722" y="601" width="190" height="18" rx="3" fill="#fff" stroke="#555"/>`+lab;
+h+=T(820,637,'CONTROL BOX (FRONT)',11,'text-anchor="middle" font-weight="bold"');
+const comp=(x,w,fill,txt,tc)=>`<rect x="${x}" y="645" width="${w}" height="22" rx="3" fill="${fill}" stroke="#555" stroke-width=".8"/>${T(x+w/2,659,txt,8,`text-anchor="middle" font-weight="bold" fill="${tc||'#111'}"`)}`;
+h+=comp(712,54,'#f0a020','24V PSU')+comp(770,54,'#7e3fb0','ESP32+4G','#fff')+comp(828,54,'#c0392b','FUSES/MCB','#fff')+comp(886,42,'#2f6f9f','RELAYS','#fff');
+h+=`<rect x="712" y="676" width="124" height="40" rx="4" fill="#fff" stroke="#555"/>${T(720,689,'STATUS',8,'fill="#555"')}${T(720,708,'Idle',14,'id="stt" font-weight="bold"')}`;
+h+=`<circle id="esc" cx="868" cy="692" r="11" fill="#d32f2f" stroke="#e8c21a" stroke-width="3"/>${T(868,714,'E-STOP',7,'text-anchor="middle"')}`;
+h+=`<circle id="led" cx="914" cy="692" r="6" fill="#999"/>${T(914,714,'RUN',7,'text-anchor="middle"')}`;
+h+=T(712,730,'',8,'id="rl" fill="#333"');
+h+=T(712,741,'CABLE GLANDS (8)',7,'fill="#555"');
+for(let k=0;k<8;k++)h+=`<ellipse cx="${722+k*26}" cy="749" rx="8" ry="4" fill="#111"/>`;
+// legend + toast
+h+=`<g transform="translate(100,640)"><rect width="190" height="80" rx="4" fill="#fff" stroke="#ccc"/>${T(10,16,'LEGEND',9,'font-weight="bold"')}
+<rect x="10" y="26" width="14" height="4" fill="#1565c0"/>${T(30,31,'Pipe / water',9)}<rect x="10" y="40" width="14" height="4" fill="#2ecc71"/>${T(30,45,'Valve open / sensor wet',9)}
+<rect x="10" y="54" width="14" height="4" fill="#8a8f95"/>${T(30,59,'Inactive',9)}<rect x="10" y="66" width="14" height="4" fill="#d32f2f"/>${T(30,71,'Moisture low (&lt;30%)',9)}</g>`;
+h+=`<g transform="translate(310,650)"><rect width="380" height="70" rx="10" fill="#eef4fb" stroke="#9db6d4"/>${T(16,28,'Prototype updates:',15,'font-weight="bold"')}${T(16,52,'',13,'id="toast" font-weight="bold" fill="#1f6f3a"')}</g>`;
+
+// tank, flow, pressure
+h+=`<rect x="60" y="522" width="96" height="20" rx="3" fill="#fff" stroke="#1565c0"/>${T(108,536,'',9,'id="fq" text-anchor="middle" font-weight="bold"')}<rect x="60" y="546" width="96" height="20" rx="3" fill="#fff" stroke="#1565c0"/>${T(108,560,'',9,'id="pr" text-anchor="middle" font-weight="bold"')}`;
+h+=`<line x1="940" y1="652" x2="960" y2="652" stroke="#333" stroke-width="3"/><line x1="960" y1="652" x2="960" y2="466" stroke="#333" stroke-width="3"/><circle cx="960" cy="462" r="5" fill="#333"/><path d="M948 450 q12 -14 24 0 M941 440 q19 -22 38 0" fill="none" stroke="#1565c0" stroke-width="2"/>${T(960,684,'4G ANTENNA',8,'text-anchor="middle" font-weight="bold"')}`;
+h+=`<rect x="975" y="50" width="315" height="160" rx="8" fill="#fff" stroke="#9db6d4"/>${T(988,68,'EVENT LOG',10,'font-weight="bold"')}`;
+for(let i=0;i<6;i++)h+=T(988,92+i*20,'',10,`id="lg${i}"`);
+h+=`<polyline points="156,532 172,532 172,606 700,606" fill="none" stroke="#1565c0" stroke-width="2"/><polyline points="156,556 164,556 164,618 700,618" fill="none" stroke="#7e3fb0" stroke-width="2"/>`;
+h+=T(560,603,'FLOW signal',7,'fill="#1565c0" font-weight="bold"')+T(560,615,'PRESSURE signal',7,'fill="#7e3fb0" font-weight="bold"');
+// field power and sensor row
+h+=`<polyline points="10,778 930,778 930,756" fill="none" stroke="#555" stroke-width="2"/>${T(500,772,'FIELD POWER AND SENSOR BUS TO CONTROL BOX',9,'text-anchor="middle" fill="#555"')}`;
+[['SOLAR PANEL','150 W + MPPT'],['BATTERY','12 V backup'],['SURGE / EARTH','lightning guard'],['RAIN SENSOR','skips schedule'],['4G MODEM','SIM + antenna'],['SCHEDULE','local, offline-safe'],['WATCHDOG','auto-reset']].forEach((t,i)=>{const x=10+i*135;
+ h+=`<line x1="${x+65}" y1="778" x2="${x+65}" y2="792" stroke="#555"/><rect id="tile${i}" x="${x}" y="792" width="130" height="84" rx="6" fill="#fff" stroke="#555" stroke-width="1.5"/>${T(x+65,810,t[0],10,'text-anchor="middle" font-weight="bold"')}${T(x+65,840,i==2||i==6?'OK':i==5?'06:00 daily':'',15,`id="t${i}" text-anchor="middle" font-weight="bold" fill="#1f6f3a"`)}${T(x+65,862,t[1],9,'text-anchor="middle" fill="#666"')}`});
+svg.innerHTML=h;
+const $=id=>document.getElementById(id),set=(id,a,v)=>$(id).setAttribute(a,v);
+// simulation state
+const B=[24.8,1.1,1.1].map((m,i)=>({m,open:false,fill:0,wet:false,left:0,plan:PLAN[i]*60}));
+let pump=false,queue=[],cur=-1,mode='idle',estop=false,closeT=null,SCALE=6;
+const say=t=>$('toast').textContent=t;
+function start(i,auto){B.forEach((b,j)=>{if(j!==i&&!auto)b.open=false});B[i].open=true;B[i].fill=0;B[i].wet=false;B[i].left=B[i].plan;cur=i;pump=true;closeT=null;
+ say(`Bed ${i+1} is selected and starts IRRIGATING`)}
+function finish(){const i=cur;if(queue.length){const n=queue.shift();start(n,true);B[i].open=false;B[i].left=0}
+ else{pump=false;say(`Bed ${i+1} done. Pump off, valve closing...`);addLog('Bed '+(i+1)+' done, pump off');closeT={i,t:1.5};cur=-1}}
+function halt(){queue=[];if(cur>=0){pump=false;closeT={i:cur,t:1.5};cur=-1}say('Stopped. Pump off, then valve closes.')}
+let rain=false,batt=92,log=[],dayT=0,day=1;const DAY=70;
+// MANUAL-ONLY MODE:
+// Irrigation is never started by page/server startup or by an automatic timer.
+// A mobile command must explicitly request START, SCHEDULE, or NEW DAY.
+
+function toggleEs(){estop=!estop;
+ if(estop){queue=[];cur=-1;pump=false;closeT=null;B.forEach(b=>{b.open=false;b.left=0});say('E-STOP pressed: relays dropped, all valves closed')}else say('E-stop reset. System ready.');addLog(estop?'E-STOP active':'E-stop reset')}
+$('esc').addEventListener('click',toggleEs);
+function addLog(t){log.unshift(t);log=log.slice(0,6)}
+function canRun(){return estop?'E-stop active':batt<12?'Battery low, pump locked':''}
+function schedule(){$('t5').textContent='Ran 06:00';addLog('06:00 local schedule fired');const r=canRun();
+ if(r){say('Schedule blocked: '+r);addLog('ALERT: schedule blocked, '+r);return}
+ if(rain){say('Rain detected: schedule skipped');addLog('Skipped today: rain');return}
+ const l=B.map((b,i)=>b.m<30?i:-1).filter(i=>i>=0);
+ if(!l.length){say('All beds moist enough, nothing to do');addLog('No irrigation needed');return}
+ queue=l.slice(1);start(l[0],false);addLog('Auto run: beds '+l.map(i=>i+1).join(', '))}
+function newDay(){day++;B.forEach(b=>{b.m=Math.max(1,b.m-60)});schedule()}
+function extra(dt,now){
+ if(pump){batt-=dt*.12}else batt=Math.min(100,batt+dt*.03);
+ batt=Math.max(0,batt);
+ if(pump&&batt<12){const m='Battery low, pump locked';halt();say('FAULT: '+m);addLog('ALERT: '+m)}
+ const run=pump&&B.some(b=>b.open);
+ $('fq').textContent='FLOW '+(run?6+Math.sin(now/300)*.2:0).toFixed(1)+' L/min';
+ $('pr').textContent='PRESS '+(run?1.8:pump?3.5:0).toFixed(1)+' bar';
+  $('t0').textContent=Math.round(110+12*Math.sin(now/2000))+' W';$('t1').textContent=Math.round(batt)+' %';
+ $('t3').textContent='Dry';$('t4').textContent='4 bars';
+ set('tile1','fill',batt<12?'#fde0dc':'#fff');
+ for(let i=0;i<6;i++)$('lg'+i).textContent=log[i]||'';
+ }
+let last=performance.now();
+function tick(now){const dt=Math.min(.1,(now-last)/1000);last=now;
+ if(closeT){closeT.t-=dt;if(closeT.t<=0){B[closeT.i].open=false;B[closeT.i].left=0;closeT=null}}
+ if(cur>=0&&B[cur].open){const b=B[cur];b.fill=Math.min(1,b.fill+dt/6);if(b.fill>=1)b.wet=true;if(b.fill>.3)b.m=Math.min(85,b.m+dt*1.6);b.left-=dt*SCALE;if(b.left<=0)finish()}
+ B.forEach((b,i)=>{if(!b.open){b.fill=Math.max(0,b.fill-dt/25);b.wet=false;b.m=Math.max(1,b.m-dt*.03)}
+  const on=b.open;
+  set('v'+i,'fill',on?'#2ecc71':'#8a8f95');$('sv'+i).textContent=b.wet?'WET':'DRY';set('sn'+i,'fill',b.wet?'#2ecc71':'#8a8f95');
+  set('bf'+i,'opacity',on?1:0);set('bf'+i,'class',on?'flow':'');
+  set('wt'+i,'width',b.fill*(BW-4));set('bed'+i,'fill',on?'#dbeaf8':'#fdf3d6');
+  set('pa'+i,'fill',b.wet?'#2ecc71':'#2a6fdb');set('pb'+i,'fill',b.wet?'#2ecc71':'#2a6fdb');
+  set('md'+i,'fill',b.m<30?'#d32f2f':'#2a8fd0');$('mp'+i).textContent=Math.round(b.m)+'%';
+  const st=on?(b.wet?'Irrigating (water arrived)':'Irrigating'):'Waiting';
+  $('ss'+i).textContent=st;
+  const sec=Math.max(0,Math.ceil(b.left));
+  $('sm'+i).innerHTML=`<tspan font-weight="bold">Moisture:</tspan> ${b.m.toFixed(1)}%`;
+  $('sp'+i).innerHTML=on?`<tspan font-weight="bold">Time left:</tspan> ${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`:`<tspan font-weight="bold">Planned:</tspan> ${PLAN[i]}m`;
+  const w=$('w'+i+'V');if(w)w.setAttribute('stroke-width',on?4:2);
+  });
+ set('pump','fill',pump?'#2ecc71':'#9aa0a6');
+ $('stt').textContent=estop?'E-STOP':pump?'Running':'Idle';
+ set('led','fill',estop?'#d32f2f':pump?'#2ecc71':'#999');
+ $('rl').textContent=`CH1-3: ${B.map(b=>b.open?'ON':'off').join(' ')}  CH4: ${pump?'ON':'off'}`;
+ dayT+=dt;
+ // Automatic scheduling intentionally disabled. Watering can only begin
+ // through a command received from the mobile controller.
+
+ B.forEach((b,i)=>$('pg'+i).style.setProperty('--lf',b.m<30?'#a9a64a':'#3f9b4a'));
+ extra(dt,now);
+ requestAnimationFrame(tick)}
+// Safe startup state: server/browser start never opens a valve or starts the pump.
+pump=false; cur=-1; estop=false; closeT=null; queue=[];
+B.forEach(b=>{b.open=false;b.fill=0;b.wet=false;b.left=0;});
+say('System ready. Waiting for mobile command.');
+requestAnimationFrame(tick);
+</script>
+<script>
+/* MOBILE REMOTE CONTROL BRIDGE */
+const REMOTE_POLL_MS = 500;
+async function remoteGet(url){
+  try{
+    const r = await fetch(url, {cache:'no-store'});
+    return await r.json();
+  }catch(e){ return null; }
+}
+async function remotePost(url, data={}){
+  try{
+    const r = await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+    return await r.json();
+  }catch(e){ return null; }
+}
+async function sendRemoteStatus(){
+  const current = cur >= 0 ? cur + 1 : 0;
+  const states = B.map((b,i)=>({
+    bed:i+1,
+    moisture:Number(b.m.toFixed(1)),
+    valve:b.open,
+    wet:b.wet,
+    timeLeft:Math.max(0,Math.ceil(b.left))
+  }));
+  await remotePost('/api/status',{
+    pump, estop, currentBed:current, battery:Number(batt.toFixed(1)),
+    rain, mode:pump?'running':'idle', beds:states, message:$('toast').textContent
+  });
+}
+async function processRemoteCommand(c){
+  if(!c) return;
+  const cmd=(c.command||'').toLowerCase().trim();
+  if(cmd==='start'){
+    if(c.bed>=1 && c.bed<=B.length){const r=canRun();if(r)say('Start blocked: '+r);else{const i=c.bed-1;if(c.minutes>0){PLAN[i]=c.minutes;B[i].plan=c.minutes*60}start(i,false)}}
+    else say('Remote command needs a valid bed number');
+  }else if(cmd==='stop'){
+    halt();
+  }else if(cmd==='schedule'){
+    schedule();
+  }else if(cmd==='estop'){
+    if(!estop) toggleEs();
+  }else if(cmd==='reset'){
+    if(estop) toggleEs();
+  }else if(cmd==='newday'){
+    if(!pump && cur<0 && !closeT) newDay();
+    else say('Cannot advance day while irrigation is running');
+  }
+  addLog('Mobile: '+(c.raw||cmd));
+  await sendRemoteStatus();
+}
+async function pollRemote(){
+  const c=await remoteGet('/api/command');
+  if(c && c.id) await processRemoteCommand(c);
+  await sendRemoteStatus();
+}
+setInterval(pollRemote, REMOTE_POLL_MS);
+pollRemote();
+</script>
+
+</body></html>
